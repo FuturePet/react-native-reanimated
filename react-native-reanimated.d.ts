@@ -444,6 +444,9 @@ declare module 'react-native-reanimated' {
     export function runOnUI<A extends any[], R>(
       fn: (...args: A) => R
     ): (...args: Parameters<typeof fn>) => void;
+    export function runOnJS<A extends any[], R>(
+      fn: (...args: A) => R
+    ): (...args: Parameters<typeof fn>) => void;
     export function processColor(color: number | string): number;
 
     type DependencyList = ReadonlyArray<any>;
@@ -700,6 +703,7 @@ declare module 'react-native-reanimated' {
   export const spring: typeof Animated.spring;
   export const SpringUtils: typeof Animated.SpringUtils;
   export const runOnUI: typeof Animated.runOnUI;
+  export const runOnJS: typeof Animated.runOnJS;
   export const processColor: typeof Animated.processColor;
   export const useValue: typeof Animated.useValue;
   export const useSharedValue: typeof Animated.useSharedValue;
