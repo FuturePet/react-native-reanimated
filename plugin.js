@@ -105,9 +105,7 @@ const blacklistedFunctions = new Set([
 ]);
 
 class ClosureGenerator {
-  constructor() {
-    this.trie = [{}, false];
-  }
+  trie = [{}, false];
 
   mergeAns(oldAns, newAns) {
     const [purePath, node] = oldAns;

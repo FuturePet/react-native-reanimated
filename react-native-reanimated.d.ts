@@ -9,6 +9,7 @@ declare module 'react-native-reanimated' {
     ImageProps,
     ScrollViewProps,
     StyleProp,
+    RegisteredStyle,
     ViewStyle,
     TextStyle,
     ImageStyle,
@@ -53,7 +54,7 @@ declare module 'react-native-reanimated' {
 
     interface InterpolationConfig {
       inputRange: ReadonlyArray<Adaptable<number>>;
-      outputRange: ReadonlyArray<Adaptable<number>>;
+      outputRange: ReadonlyArray<Adaptable<number | string>>;
       extrapolate?: Extrapolate;
       extrapolateLeft?: Extrapolate;
       extrapolateRight?: Extrapolate;
@@ -187,7 +188,7 @@ declare module 'react-native-reanimated' {
       ? T
       : never;
     export type AdaptTransforms<T> = {
-      [P in keyof T]: Adaptable<T[P] extends string ? number | string : T[P]>
+      [P in keyof T]: Adaptable<T[P] extends string ? number | string : T[P]>;
     };
     export type AnimatedTransform = (AdaptTransforms<TransformStyleTypes>)[];
 
@@ -197,9 +198,8 @@ declare module 'react-native-reanimated' {
         : (S[K] extends ReadonlyArray<any>
             ? ReadonlyArray<AnimateStyle<S[K][0]>>
             : S[K] extends object
-            ? AnimateStyle<S[K]>
-            : // allow `number` where `string` normally is to support colors
-            S[K] extends (string | undefined)
+            ? AnimateStyle<S[K]> // allow `number` where `string` normally is to support colors
+            : S[K] extends (string | undefined)
             ? S[K] | number
             :
                 | S[K]
@@ -337,7 +337,7 @@ declare module 'react-native-reanimated' {
       g: Adaptable<number>,
       b: Adaptable<number>,
       a?: Adaptable<number>
-    ): AnimatedNode<number>;
+    ): AnimatedNode<number | string>;
     export function diff(value: Adaptable<number>): AnimatedNode<number>;
     export function diffClamp(
       value: Adaptable<number>,
@@ -355,9 +355,9 @@ declare module 'react-native-reanimated' {
         outputColorRange,
       }: {
         inputRange: ReadonlyArray<Adaptable<number>>;
-        outputColorRange: (string | number)[];
+        outputColorRange: ReadonlyArray<Adaptable<number | string>>;
       }
-    ): AnimatedNode<number>;
+    ): AnimatedNode<number | string>;
     export const max: BinaryOperator;
     export const min: BinaryOperator;
 
@@ -421,13 +421,13 @@ declare module 'react-native-reanimated' {
     export function cancelAnimation<T extends SharedValue<SharedValueType>>(
       sharedValue: T
     ): void;
-    export function delay(delayMS: number, delayedAnimation: number): number;
-    export function repeat(
+    export function withDelay(delayMS: number, delayedAnimation: number): number;
+    export function withRepeat(
       animation: number,
       numberOfReps?: number,
       reverse?: boolean
     ): number;
-    export function sequence(...animations: [number, ...number[]]): number;
+    export function withSequence(...animations: [number, ...number[]]): number;
 
     // hooks
     export function useCode(
@@ -448,12 +448,27 @@ declare module 'react-native-reanimated' {
       fn: (...args: A) => R
     ): (...args: Parameters<typeof fn>) => void;
     export function processColor(color: number | string): number;
+    export function createWorklet<A extends any[], R>(
+      fn: (...args: A) => R
+    ): (...args: Parameters<typeof fn>) => R;
+
+    export function interpolateColor(
+      value: number,
+      inputRange: number[],
+      outputRange: string[],
+      colorSpace?: 'RGB' | 'HSV'
+    ): string | number;
+
+    export function makeMutable<T extends SharedValueType>(
+      initialValue: T
+    ): SharedValue<T>;
 
     type DependencyList = ReadonlyArray<any>;
 
     // reanimated2 hooks
     export function useSharedValue<T>(
-      initialValue: T
+      initialValue: T,
+      shouldRebuild?: boolean
     ): T extends SharedValueType ? SharedValue<T> : never;
 
     export function useDerivedValue<T extends SharedValueType>(
@@ -461,8 +476,15 @@ declare module 'react-native-reanimated' {
       deps?: DependencyList
     ): SharedValue<T>;
 
+    export function useAnimatedReaction<D>(
+      dependencies: () => D,
+      effects: (dependencies: D) => void,
+      deps?: DependencyList
+    );
+                        
+    export type AnimatedStyleProp<T extends object> = AnimateStyle<T> | RegisteredStyle<AnimateStyle<T>>;
     export function useAnimatedStyle<
-      T extends StyleProp<AnimateStyle<ViewStyle | ImageStyle | TextStyle>>
+      T extends AnimatedStyleProp<ViewStyle | ImageStyle | TextStyle>
     >(updater: () => T, deps?: DependencyList): T;
     export function useAnimatedProps<T extends {}>(
       updater: () => T,
@@ -483,6 +505,10 @@ declare module 'react-native-reanimated' {
       handlers: ScrollHandlers<TContext>,
       deps?: DependencyList
     ): OnScroll;
+    export function useWorkletCallback<A extends any[], R>(
+      fn: (...args: A) => R,
+      deps?: DependencyList
+    ): (...args: Parameters<typeof fn>) => R;
 
     export function useAnimatedRef<T extends Component>(): RefObject<T>;
     export function measure<T extends Component>(
@@ -705,11 +731,16 @@ declare module 'react-native-reanimated' {
   export const runOnUI: typeof Animated.runOnUI;
   export const runOnJS: typeof Animated.runOnJS;
   export const processColor: typeof Animated.processColor;
+  export const makeMutable: typeof Animated.makeMutable;
   export const useValue: typeof Animated.useValue;
   export const useSharedValue: typeof Animated.useSharedValue;
   export const useAnimatedStyle: typeof Animated.useAnimatedStyle;
+  export const useAnimatedReaction: typeof Animated.useAnimatedReaction;
   export const useAnimatedProps: typeof Animated.useAnimatedProps;
   export const useDerivedValue: typeof Animated.useDerivedValue;
+  export const useWorkletCallback: typeof Animated.useWorkletCallback;
+  export const createWorklet: typeof Animated.createWorklet;
+  export const interpolateColor: typeof Animated.interpolateColor;
   export const useAnimatedGestureHandler: typeof Animated.useAnimatedGestureHandler;
   export const useAnimatedScrollHandler: typeof Animated.useAnimatedScrollHandler;
   export const useAnimatedRef: typeof Animated.useAnimatedRef;
@@ -719,8 +750,8 @@ declare module 'react-native-reanimated' {
   export const withSpring: typeof Animated.withSpring;
   export const withDecay: typeof Animated.withDecay;
   export const cancelAnimation: typeof Animated.cancelAnimation;
-  export const delay: typeof Animated.delay;
-  export const repeat: typeof Animated.repeat;
-  export const sequence: typeof Animated.sequence;
+  export const withDelay: typeof Animated.withDelay;
+  export const withRepeat: typeof Animated.withRepeat;
+  export const withSequence: typeof Animated.withSequence;
   export const interpolate: typeof Animated.interpolate;
 }
